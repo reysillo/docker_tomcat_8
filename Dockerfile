@@ -36,7 +36,7 @@ RUN \
   rm -rf $TOMCAT_PATH/webapps/* && \
   rm /tmp/tomcat.tar.gz
 
-COPY tomcat_supervisord_wrapper.sh $TOMCAT_PATH/bin/tomcat_supervisord_wrapper.sh
+COPY ./tomcat_supervisord_wrapper.sh $TOMCAT_PATH/bin/tomcat_supervisord_wrapper.sh
 
 RUN chmod 755 $TOMCAT_PATH/bin/tomcat_supervisord_wrapper.sh
 
