@@ -1,0 +1,65 @@
+---
+- hosts: SourceCodeServers
+  vars:
+    project_name: easysol_portal
+    packages_source: "http://192.168.243.140:8121/guestAuth/repository/downloadAll/EasysolPortal_DevelopBuild/lastSuccessful/artifacts.zip"
+    # packages_source: "http://192.168.243.140:8121/repository/downloadAll/EasysolPortal_DevelopBuild/lastSuccessful/artifacts.zip"
+    # packages_source: "http://192.168.243.163:8080/job/easysol_reports_QA/lastBuild/artifact/*zip*/archive.zip"
+    local_temporal_dir: "/continuous_delivery_files/{{ project_name }}"
+    remote_temporal_dir: "/continuous_delivery_files/{{ project_name }}"
+  tasks:
+    - name: LOCAL >> Install apt packages python-pip 
+      apt: name=python-pip state=present
+    #- name: install docker-py
+    #  pip: name=docker-py 
+    - name: LOCAL >> Valida el directorio local para almacenamiento de archivos
+      file: path={{ local_temporal_dir }} mode=0777 state=directory recurse=no
+    - name: LOCAL >> Limpia archivos de instalaciones previas
+      shell:  rm -rf {{ local_temporal_dir }}/*.*; rm -rf {{ local_temporal_dir }}/*
+    - name: LOCAL >> Valida el directorio local de paquetes
+      file: path={{ local_temporal_dir }}/packages mode=0777 state=directory recurse=no
+    - name: LOCAL >> Obtiene el paquete comprimido de la instalación
+      get_url: url={{ packages_source }} dest={{ local_temporal_dir }}/{{ project_name }}.zip force=yes
+    - name: LOCAL >> Extrae los .war del archivo comprimido descargado
+      command: 7z e -o{{ local_temporal_dir }} {{ local_temporal_dir }}/{{ project_name }}.zip *.war *.zip "continuous-delivery" -r -y
+    # - name: LOCAL >> Descomprime cada uno los archivos de continuous delivery
+    #   shell:  cd {{ local_temporal_dir }}; unzip -o continuous-delivery
+    - name: LOCAL >> Descomprime cada uno de los .war extraidos
+      shell:  cd {{ local_temporal_dir }}; ls *.war|awk -F'.war' '{print "unzip -o "$0" -d packages/"$1}'|sh
+    - name: LOCAL >> Elimina archivos innecesarios
+      shell:  cd {{ local_temporal_dir }}; rm -rf *.zip *.war
+    - name: Valida el directorio remoto almacenamiento de archivos
+      file: path={{ local_temporal_dir }} mode=0777 state=directory recurse=no
+      connection: local
+    - name: Sincronización de archivos de instalación del servidor de sources al servidor local
+      synchronize: src={{ local_temporal_dir }} dest={{ remote_temporal_dir }}/ delete=yes mode=pull
+
+
+    # - shell: mv {{ remote_temporal_dir }}/{{ project_name }}/continuous_delivery/* {{ remote_temporal_dir }}/{{ project_name }}/
+
+
+
+
+
+
+
+
+
+
+
+
+# Obtain source code of Project
+# - hosts: SourceCodeServers
+#   tasks:
+#     - name: Hello World!
+#       shell: echo "Hi! Tower is working"
+#     - name: Hello World2!
+#       debug: msg="1 Hi! Tower is working SourceCodeServers {{ groups['PortalServers'] }}"
+
+
+# - hosts: SourceCodeServers
+#   tasks:
+#     - name: Hello World!
+#       shell: echo "Hi! Tower is working"
+#     - name: Hello World2!
+#       debug: msg="2 Hi! Tower is working SourceCodeServers {{ groups['SourceCodeServers'] }}"
